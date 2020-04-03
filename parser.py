@@ -19,15 +19,15 @@ class Parser(object):
             text_id = text.getAttribute("id")
             words = []
             words_pos = []
-            words_lema = []
+            words_lemma = []
             for sentence in text.childNodes:
                 for word in sentence.childNodes:
                     if word.nodeName not in ["wf", "instance"]:
                         continue
                     words.append(word.childNodes[0].nodeValue)
                     words_pos.append(word.getAttribute("pos"))
-                    words_lema.append(word.getAttribute("lemma"))
+                    words_lemma.append(word.getAttribute("lemma"))
 
-            documents.append(Document(text_id, words, words_pos, words_lema))
+            documents.append(Document(text_id, words, words_pos, words_lemma))
 
         return documents
