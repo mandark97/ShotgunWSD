@@ -1,0 +1,7 @@
+autopep8==1.5
+certifi==2019.11.28
+nltk==3.4.5
+numpy==1.18.2
+pycodestyle==2.5.0
+six==1.14.0
+soupsieve==2.0
