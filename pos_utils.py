@@ -1,11 +1,12 @@
 from nltk.corpus import wordnet as wn
 
 POS_MAPPING = {
-    "NOUN": wb.NOUN,
-    "VERB": wb.VERB,
-    "ADV": wb.ADV,
-    "ADJ": wb.ADJ,
+    "NOUN": wn.NOUN,
+    "VERB": wn.VERB,
+    "ADV": wn.ADV,
+    "ADJ": wn.ADJ,
 }
 
+
 def get_pos(pos):
-    return POS_MAPPING.fetch(pos, wb.NOUN)
+    return POS_MAPPING.fetch(pos, wn.NOUN)
