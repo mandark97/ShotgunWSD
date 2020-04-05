@@ -1,44 +1,81 @@
-from typing import List, Tuple, Union
+from typing import List, Dict
 
-from nltk.corpus import wordnet as wn
-from nltk.corpus.reader import Synset
-
+from local_wsd import LocalWSD
 from parsed_document import Document
-from pos_utils import get_pos
 from synset_relatedness import SynsetRelatedness
+from window_config import WindowConfiguration
 
 
 class ShotgunWSD(object):
-    def __init__(self, document: Document, window_size: int, number_configs: int):
+    def __init__(self, document: Document, window_size: int, number_configs: int, synset_relatedness: SynsetRelatedness,
+                 min_synset_collision: int, max_synset_collision: int):
         self.document = document
         self.window_size = window_size
         self.number_configs = number_configs
-        self.synset_relatedness = None
+        self.synset_relatedness = synset_relatedness
+        self.min_synset_collision = min_synset_collision
+        self.max_synset_collision = max_synset_collision
+
         super().__init__()
 
     def run(self):
-        documentWindowSolutions = self.compute_windows()
-        self.mergeWindowSolutions(documentWindowSolutions)
-        senseVotes = self.voteSenses(documentWindowSolutions)
+        documentWindowSolutions: Dict[int, List[WindowConfiguration]] = self.compute_windows()
+        self.merge_window_solutions(documentWindowSolutions)
+        senseVotes = self.vote_senses(documentWindowSolutions)
         senses = self.selectSenses(documentWindowSolutions, senseVotes)
         finalSenses = self.detectMostUsedSenses(senses)
         convertedSynsets = self.convertFinalSynsets(finalSenses)
 
         return convertedSynsets
 
-    def compute_windows(self):
+    def compute_windows(self) -> Dict[int, List[WindowConfiguration]]:
+        document_window_solutions = {}
+
         for word_index in range(0, len(self.document.words) - self.window_size):
             window_words = self.document.words[word_index:word_index + self.window_size]
             window_words_pos = self.document.words_pos[word_index:word_index + self.window_size]
 
-            # some max synset combination black magic
-            LocalWSD(word_index, window_words, window_words_pos,
-                     self.number_configs, self.synset_relatedness)
+            # TODO some max synset combination black magic
+            local_wsd = LocalWSD(word_index, window_words, window_words_pos,
+                                 self.number_configs, self.synset_relatedness)
+            local_wsd.run()
 
-    def mergeWindowSolutions(self, documentWindowSolutions):
-        pass
+            document_window_solutions[word_index] = local_wsd.windows_solutions
 
-    def voteSenses(self, documentWindowSolutions):
+        return document_window_solutions
+
+    def merge_window_solutions(self, document_window_solutions):
+        merged_windows = None
+
+        for synset_collisions in reversed(range(self.min_synset_collision, self.max_synset_collision)):
+            merged_windows = self.merge_windows(document_window_solutions, synset_collisions)
+
+        return merged_windows
+
+    # works?
+    def merge_windows(self, document_window_solutions: Dict[int, List[WindowConfiguration]],
+                      synset_collisions: int) -> Dict[int, List[WindowConfiguration]]:
+        for l in range(len(self.document.words)):
+            if l in document_window_solutions:
+                config_list1 = document_window_solutions[l]
+                for window1 in config_list1:
+                    for j in range(len(window1.synset_indexes) - synset_collisions):
+                        if j + l + 1 in document_window_solutions:
+                            config_list2 = document_window_solutions[j + l + 1]
+
+                            for window2 in config_list2:
+                                # collided = False
+
+                                if WindowConfiguration.has_collisions(window1, window2, j + 1, synset_collisions):
+                                    merged_window = WindowConfiguration.merge(window1, window2, j + 1)
+                                    if merged_window != None:
+                                        # collided = True
+                                        config_list1.append(merged_window)
+                                    config_list2.remove(window2)
+
+        return document_window_solutions
+
+    def vote_senses(self, documentWindowSolutions):
         pass
 
     def selectSenses(self, documentWindowSolutions, senseVotes):
@@ -50,53 +87,7 @@ class ShotgunWSD(object):
     def convertFinalSynsets(self, senses):
         pass
 
-
 # documents = Parser().run()
 
 # for document in documents:
 #     ShotgunWSD(document=document, window_size=2, number_configs=2).run()
-
-
-class LocalWSD(object):
-    def __init__(self, word_index: int, window_words: List[str], window_words_pos: List[str], number_configs: int,
-                 synset_relatedness: SynsetRelatedness):
-        self.word_index = word_index
-        self.window_words = window_words
-        self.window_words_pos = window_words_pos
-        self.number_configs = number_configs
-        self.synset_relatedness = synset_relatedness
-
-        super().__init__()
-
-    def run(self):
-        word_synsets = self.build_window_synsets_array()
-        similarity_matrix = self.compute_relatedness(word_synsets)
-
-        self.generate_synset_combinations(word_synsets, similarity_matrix)
-
-    def build_window_synsets_array(self) -> List[Union[Tuple[str, None], Tuple[str, Synset]]]:
-        word_synsets = []
-        for index, word in enumerate(self.window_words):
-            synsets = wn.synsets(word, pos=get_pos(self.window_words_pos[index]))
-            if len(synsets) == 0:
-                word_synsets.append((word, None))
-            else:
-                for synset in synsets:
-                    word_synsets.append((word, synset))
-
-        return word_synsets
-
-    def compute_relatedness(self, word_synsets: List[Tuple[str, Synset]]) -> List[List[float]]:
-        similarity_matrix = [[0.0 for _ in range(len(word_synsets))] for _ in range(len(word_synsets))]
-
-        for i, (word1, synset1) in enumerate(word_synsets):
-            for j, (word2, synset2) in enumerate(word_synsets[i:], start=i):
-                sim = self.synset_relatedness.compute_similarity(word1, synset1, word2, synset2)
-                similarity_matrix[i][j] = sim
-                similarity_matrix[j][i] = sim
-
-        return similarity_matrix
-
-    # get the best configurations
-    def generate_synset_combinations(self, word_synsets, similarity_matrix):
-        pass
