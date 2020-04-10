@@ -8,3 +8,6 @@ class Document(object):
         self.words_pos = words_pos
         self.words_lemma = words_lemma
         super().__init__()
+
+    def __len__(self):
+        return len(self.words)

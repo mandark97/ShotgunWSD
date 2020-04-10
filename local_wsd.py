@@ -13,7 +13,8 @@ ScoreMatrix = Dict[Tuple[int, int, int, int], float]
 
 
 class LocalWSD(object):
-    windows_solutions: Optional[List[WindowConfiguration]]
+    similarity_matrix: Dict[Tuple[int, int, int, int], float]
+    word_synsets: List[Tuple[str, List[Synset]]]
 
     # Maybe combine window_words and window_words_pos to a tuple
     def __init__(self, word_offset: int, window_words: List[str], window_words_pos: List[str], number_configs: int,
@@ -24,7 +25,7 @@ class LocalWSD(object):
         self.number_configs = number_configs
         self.synset_relatedness = synset_relatedness
 
-        self.windows_solutions = []
+        self.windows_solutions: List[WindowConfiguration] = []
 
         super().__init__()
 
@@ -44,22 +45,8 @@ class LocalWSD(object):
                 word_synsets.append((word, [None]))
             else:
                 word_synsets.append((word, synsets))
-                # for synset in synsets:
-                #     word_synsets.append((word, synset))
 
         return word_synsets
-
-    # def compute_relatedness(self, word_synsets: List[Tuple[str, Synset]]) -> List[List[float]]:
-    #     word_synset_tuples = [[(word, synset) for synset in synsets] for (word, synsets) in word_synsets]
-    #     similarity_matrix = [[0.0 for _ in range(len(word_synset_tuples))] for _ in range(len(word_synset_tuples))]
-    #
-    #     for i, (word1, synset1) in enumerate(word_synset_tuples):
-    #         for j, (word2, synset2) in enumerate(word_synset_tuples[i:], start=i):
-    #             sim = self.synset_relatedness.compute_similarity(word1, synset1, word2, synset2)
-    #             similarity_matrix[i][j] = sim
-    #             similarity_matrix[j][i] = sim
-    #
-    #     return similarity_matrix
 
     def compute_relatedness(self, word_synsets: WordSynsets) -> ScoreMatrix:
         similarity_matrix = {}
@@ -74,14 +61,23 @@ class LocalWSD(object):
 
         return similarity_matrix
 
-    # get the best configurations
     def generate_synset_combinations(self):
+        """
+        Generate best synset combinations with the highest scores
+        """
         self.combinations_recursion(0, [0] * len(self.window_words))
         if len(self.windows_solutions) == 0:
             self.windows_solutions = None
-        # TODO else set global ids
+        else:
+            for window_configuration in self.windows_solutions:
+                window_configuration.set_global_ids(self.word_offset)
 
     def combinations_recursion(self, word_index: int, synset_indexes: List[int]):
+        """
+        Recursion to go through the all combinations
+        :param word_index: Index of the word we are at
+        :param synset_indexes: Array of the index of the sense we are choosing
+        """
         for synset_index, synset in enumerate(self.word_synsets[word_index][1]):
             synset_indexes[word_index] = synset_index
 
