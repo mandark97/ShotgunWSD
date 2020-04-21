@@ -49,7 +49,7 @@ class WindowConfiguration(object):
         pass
 
     @staticmethod
-    def merge(window1, window2, offset):
+    def merge(window1: "WindowConfiguration", window2: "WindowConfiguration", offset: int):
         if window2.last_global_sense < window1.last_global_sense:
             return
 
