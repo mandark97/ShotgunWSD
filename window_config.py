@@ -1,4 +1,5 @@
 from typing import List, Tuple, Optional
+from synset_utils import SynsetUtils
 
 from nltk.corpus.reader import Synset
 
@@ -47,10 +48,20 @@ class WindowConfiguration(object):
     def has_collisions(window1, window2, offset, synset_collisions):
         pass
 
-    # TODO
     @staticmethod
-    def merge(window1, window2, offset):
-        pass
+    def merge(window1: "WindowConfiguration", window2: "WindowConfiguration", offset: int):
+        if window2.last_global_sense < window1.last_global_sense:
+            return
+
+        start_at = len(window1.synset_indexes) - offset
+        synsets_indexes = window1.synset_indexes + window2.synset_indexes[start_at:]
+        global_senses = window1.global_synsets + window2.global_synsets[start_at:]
+        window_words = window1.window_words + window2.window_words[start_at:]
+        window_words_pos = window1.window_words_pos + window2.window_words_pos[start_at:]
+        configuration_synsets = window1.configuration_synsets + window2.configuration_synsets[start_at:]
+
+        score = SynsetUtils.compute_configuration_scores(synsets_indexes, window_words, global_senses)
+        return WindowConfiguration(synsets_indexes, window_words, window_words_pos, configuration_synsets, score, global_senses)
 
 
 def compare_by_length_and_value(window_config1: WindowConfiguration, window_config2: WindowConfiguration):
