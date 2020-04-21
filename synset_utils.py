@@ -14,17 +14,19 @@ class SynsetUtils(object):
     cache_synset_relatedness: Dict[str, float] = {}
 
     @staticmethod
-    def compute_configuration_score(synsets: List[int], scores_matrix: List[List[float]]) -> float:
+    def compute_configuration_score(synsets: List[int], scores_matrix: Dict[Tuple[int, int, int, int], float]) -> float:
         sense_score = SynsetUtils.configuration_operation.initial_score
-        for i in range(len(synsets)):
-            for j in range(i+1, len(synsets)):
-                sense_score += SynsetUtils.configuration_operation.apply_operation(sense_score, scores_matrix[synsets[i]][synsets[j]])
-                sense_score += SynsetUtils.configuration_operation.apply_operation(sense_score, scores_matrix[synsets[j]][synsets[i]])
+        for word_index1, synset_index1 in enumerate(synsets):
+            for word_index2, synset_index2 in enumerate(synsets[word_index1 + 1:], start=word_index1 + 1):
+                sense_score += max(
+                    SynsetUtils.configuration_operation.apply_operation(sense_score, scores_matrix[(word_index1, synset_index1, word_index2, synset_index2)]),
+                    SynsetUtils.configuration_operation.apply_operation(sense_score, scores_matrix[(word_index2, synset_index2, word_index1, synset_index1)])
+                )
 
         return sense_score
 
     @staticmethod
-    def compute_configuration_scores(synsets: List[int], words: List[str], postags: List[str], global_synsets: List[Tuple[int, int]]) -> float:
+    def compute_configuration_scores(synsets: List[int], words: List[str], global_synsets: List[Tuple[int, int]]) -> float:
         sense_score = SynsetUtils.configuration_operation.initial_score
         for i in range(len(synsets) - 1):
             target_synset = synsets[i]

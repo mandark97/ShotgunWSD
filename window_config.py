@@ -50,8 +50,6 @@ class WindowConfiguration(object):
 
     @staticmethod
     def merge(window1, window2, offset):
-        window1 = WindowConfiguration()
-        window2 = WindowConfiguration()
         if window2.last_global_sense < window1.last_global_sense:
             return
 
@@ -62,7 +60,7 @@ class WindowConfiguration(object):
         window_words_pos = window1.window_words_pos + window2.window_words_pos[start_at:]
         configuration_synsets = window1.configuration_synsets + window2.configuration_synsets[start_at:]
 
-        score = SynsetUtils.compute_configuration_scores(synsets_indexes, window_words, window_words_pos, global_senses)
+        score = SynsetUtils.compute_configuration_scores(synsets_indexes, window_words, global_senses)
         return WindowConfiguration(synsets_indexes, window_words, window_words_pos, configuration_synsets, score, global_senses)
 
 
