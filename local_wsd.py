@@ -6,9 +6,9 @@ from pos_utils import get_pos
 from synset_relatedness import SynsetRelatedness
 from synset_utils import SynsetUtils
 from window_config import WindowConfiguration
+from word_synsets import WordSynsets
 from nltk.corpus import wordnet as wn
 
-WordSynsets = List[Tuple[str, List[Synset]]]
 ScoreMatrix = Dict[Tuple[int, int, int, int], float]
 
 
@@ -37,12 +37,12 @@ class LocalWSD(object):
 
     def build_window_synsets_array(self) -> WordSynsets:
         word_synsets = []
-        synsets_len = {}
+        synsets_len = {} # TODO: Do we need this variable?
         for index, word in enumerate(self.window_words):
             synsets = wn.synsets(word, pos=get_pos(self.window_words_pos[index]))
             synsets_len[index] = len(synsets)
             if len(synsets) == 0:
-                word_synsets.append((word, [None]))
+                word_synsets.append((word, []))
             else:
                 word_synsets.append((word, synsets))
 
@@ -53,7 +53,7 @@ class LocalWSD(object):
 
         for word1_index, (word1, synsets1) in enumerate(word_synsets):
             for synset1_index, synset1 in enumerate(synsets1):
-                for word2_index, (word2, synsets2) in enumerate(word_synsets[word1_index:], start=word1_index):
+                for word2_index, (word2, synsets2) in enumerate(word_synsets[word1_index + 1:], start=word1_index + 1):
                     for synset2_index, synset2 in enumerate(synsets2):
                         sim = self.synset_relatedness.compute_similarity(word1, synset1, word2, synset2)
                         similarity_matrix[(word1_index, synset1_index, word2_index, synset2_index)] = sim

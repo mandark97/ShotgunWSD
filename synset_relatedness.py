@@ -3,6 +3,7 @@ from nltk.corpus.reader.wordnet import Synset
 from nltk.tokenize import PunktSentenceTokenizer
 from nltk.stem.snowball import SnowballStemmer
 from nltk.corpus import stopwords
+from typing import List
 
 
 class SynsetRelatedness(ABC):
@@ -14,7 +15,7 @@ class SynsetRelatedness(ABC):
         return " ".join(synset.examples()) + " " + synset.definition()
 
     @staticmethod
-    def preprocess_text(text: str) -> list[str]:
+    def preprocess_text(text: str) -> List[str]:
         # tokenize
         tokens = PunktSentenceTokenizer().tokenize(text)
         # remove stopwords

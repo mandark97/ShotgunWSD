@@ -9,4 +9,4 @@ POS_MAPPING = {
 
 
 def get_pos(pos):
-    return POS_MAPPING.fetch(pos, wn.NOUN)
+    return POS_MAPPING.get(pos, '')

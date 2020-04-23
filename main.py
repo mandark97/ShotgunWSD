@@ -52,7 +52,7 @@ class ShotgunWSD(object):
     def merge_window_solutions(self, document_window_solutions) -> Dict[int, List[WindowConfiguration]]:
         merged_windows = None
 
-        for synset_collisions in reversed(range(self.min_synset_collision, self.max_synset_collision)):
+        for synset_collisions in reversed(range(self.min_synset_collision, self.max_synset_collision + 1)):
             merged_windows = self.merge_windows(document_window_solutions, synset_collisions)
 
         return merged_windows
@@ -73,7 +73,7 @@ class ShotgunWSD(object):
                     config_list2 = document_window_solutions[j + l + 1]
                     for window2 in config_list2:
                         # collided = False
-                        if WindowConfiguration.has_collisions(window1, window2, j + 1, synset_collisions):
+                        if WindowConfiguration.has_collisions(window1, window2, synset_collisions):
                             merged_window = WindowConfiguration.merge(window1, window2, j + 1)
                             if merged_window != None:
                                 # collided = True
