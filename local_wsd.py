@@ -1,3 +1,4 @@
+import logging
 from typing import List, Tuple, Dict, Optional
 
 from nltk.corpus.reader import Synset
@@ -30,6 +31,7 @@ class LocalWSD(object):
         super().__init__()
 
     def run(self):
+        logging.debug(f"Starting for word_index: {self.word_offset}")
         self.word_synsets = self.build_window_synsets_array()
         self.similarity_matrix = self.compute_relatedness(self.word_synsets)
 
@@ -37,28 +39,31 @@ class LocalWSD(object):
 
     def build_window_synsets_array(self) -> WordSynsets:
         word_synsets = []
-        synsets_len = {} # TODO: Do we need this variable?
+        # synsets_len = {} # TODO: Do we need this variable?
         for index, word in enumerate(self.window_words):
             synsets = wn.synsets(word, pos=get_pos(self.window_words_pos[index]))
-            synsets_len[index] = len(synsets)
+            # synsets_len[index] = len(synsets)
             if len(synsets) == 0:
-                word_synsets.append((word, []))
+                word_synsets.append((word, [None]))
             else:
                 word_synsets.append((word, synsets))
 
         return word_synsets
 
     def compute_relatedness(self, word_synsets: WordSynsets) -> ScoreMatrix:
+        logging.debug("Start relatedness computing")
         similarity_matrix = {}
 
         for word1_index, (word1, synsets1) in enumerate(word_synsets):
             for synset1_index, synset1 in enumerate(synsets1):
                 for word2_index, (word2, synsets2) in enumerate(word_synsets[word1_index + 1:], start=word1_index + 1):
                     for synset2_index, synset2 in enumerate(synsets2):
+                        logging.debug(f"Compute relatedness for {word1}, {synset1}, {word2}, {synset2}")
                         sim = self.synset_relatedness.compute_similarity(word1, synset1, word2, synset2)
                         similarity_matrix[(word1_index, synset1_index, word2_index, synset2_index)] = sim
                         similarity_matrix[(word2_index, synset2_index, word1_index, synset1_index)] = sim
 
+        logging.debug("Finished computing relatedness matrix")
         return similarity_matrix
 
     def generate_synset_combinations(self):
@@ -71,6 +76,8 @@ class LocalWSD(object):
         else:
             for window_configuration in self.windows_solutions:
                 window_configuration.set_global_ids(self.word_offset)
+
+        logging.debug("Finished generation synset_combinations")
 
     def combinations_recursion(self, word_index: int, synset_indexes: List[int]):
         """

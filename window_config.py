@@ -44,9 +44,10 @@ class WindowConfiguration(object):
         return len(self.synset_indexes)
 
     @staticmethod
-    def has_collisions(window1: "WindowConfiguration", window2: "WindowConfiguration", synset_collisions: int):
+    def has_collisions(window1: "WindowConfiguration", window2: "WindowConfiguration", offset: int,
+                       synset_collisions: int):
         for i in range(synset_collisions):
-            if window1.synset_indexes[i - synset_collisions] != window2.synset_indexes[i]:
+            if window1.synset_indexes[i - offset] != window2.synset_indexes[i]:
                 return False
         return True
 
@@ -63,7 +64,8 @@ class WindowConfiguration(object):
         configuration_synsets = window1.configuration_synsets + window2.configuration_synsets[start_at:]
 
         score = SynsetUtils.compute_configuration_scores(synsets_indexes, window_words, global_senses)
-        return WindowConfiguration(synsets_indexes, window_words, window_words_pos, configuration_synsets, score, global_senses)
+        return WindowConfiguration(synsets_indexes, window_words, window_words_pos, configuration_synsets, score,
+                                   global_senses)
 
 
 def compare_by_length_and_value(window_config1: WindowConfiguration, window_config2: WindowConfiguration):
