@@ -43,10 +43,12 @@ class WindowConfiguration(object):
     def __len__(self):
         return len(self.synset_indexes)
 
-    # TODO
     @staticmethod
-    def has_collisions(window1, window2, offset, synset_collisions):
-        pass
+    def has_collisions(window1: "WindowConfiguration", window2: "WindowConfiguration", synset_collisions: int):
+        for i in range(synset_collisions):
+            if window1.synset_indexes[i - synset_collisions] != window2.synset_indexes[i]:
+                return False
+        return True
 
     @staticmethod
     def merge(window1: "WindowConfiguration", window2: "WindowConfiguration", offset: int):

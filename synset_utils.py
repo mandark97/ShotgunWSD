@@ -2,7 +2,7 @@ from typing import List, Dict, Tuple
 
 from nltk.corpus.reader import Synset
 
-from main import WordSynsets
+from word_synsets import WordSynsets
 from operations import ConfigurationOperation
 from synset_relatedness import SynsetRelatedness
 

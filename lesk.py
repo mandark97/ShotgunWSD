@@ -94,16 +94,16 @@ class Lesk(SynsetRelatedness):
         return Lesk.score_relation_pairs(synset1, synset2, [
             ('also', 'gloss'),
             ('attr', 'gloss'),
-            ('gloss', 'mero'),
+            ('gloss', 'gloss'),
             ('ex', 'gloss'),
-            ('gloss', 'hype'),
+            ('gloss', 'hyper'),
         ])
 
     @staticmethod
     def compute_verb_similarity(synset1 : Synset, synset2 : Synset) -> float:
         return Lesk.score_relation_pairs(synset1, synset2, [
             ('ex', 'ex'),
-            ('ex', 'hype'),
+            ('ex', 'hyper'),
             ('hypo', 'hypo'),
             ('gloss', 'hypo'),
             ('ex', 'gloss')
