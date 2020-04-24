@@ -1,10 +1,21 @@
 from typing import List, Dict, Tuple
 
+from nltk.corpus import wordnet as wn
 from nltk.corpus.reader import Synset
 
-from word_synsets import WordSynsets
 from operations import ConfigurationOperation
 from synset_relatedness import SynsetRelatedness
+
+POS_MAPPING = {
+    "NOUN": wn.NOUN,
+    "VERB": wn.VERB,
+    "ADV": wn.ADV,
+    "ADJ": wn.ADJ,
+}
+
+
+def get_pos(pos):
+    return POS_MAPPING.get(pos, '')
 
 
 class SynsetUtils(object):
@@ -19,20 +30,23 @@ class SynsetUtils(object):
         for word_index1, synset_index1 in enumerate(synsets):
             for word_index2, synset_index2 in enumerate(synsets[word_index1 + 1:], start=word_index1 + 1):
                 sense_score += max(
-                    SynsetUtils.configuration_operation.apply_operation(sense_score, scores_matrix[(word_index1, synset_index1, word_index2, synset_index2)]),
-                    SynsetUtils.configuration_operation.apply_operation(sense_score, scores_matrix[(word_index2, synset_index2, word_index1, synset_index1)])
+                    SynsetUtils.configuration_operation.apply_operation(sense_score, scores_matrix[
+                        (word_index1, synset_index1, word_index2, synset_index2)]),
+                    SynsetUtils.configuration_operation.apply_operation(sense_score, scores_matrix[
+                        (word_index2, synset_index2, word_index1, synset_index1)])
                 )
 
         return sense_score
 
     @staticmethod
-    def compute_configuration_scores(synsets: List[int], words: List[str], global_synsets: List[Tuple[int, int]]) -> float:
+    def compute_configuration_scores(synsets: List[int], words: List[str],
+                                     global_synsets: List[Tuple[int, int]]) -> float:
         sense_score = SynsetUtils.configuration_operation.initial_score
         for i in range(len(synsets) - 1):
             target_synset = synsets[i]
             target_word = words[i]
             target_global_sense = global_synsets[i]
-            for j in range(i+1, len(synsets)):
+            for j in range(i + 1, len(synsets)):
                 key1 = target_global_sense + "||" + global_synsets[j]
                 key2 = global_synsets[j] + "||" + target_global_sense
                 if key1 in SynsetUtils.cache_synset_relatedness:
@@ -47,6 +61,23 @@ class SynsetUtils(object):
                 sense_score = SynsetUtils.configuration_operation.apply_operation(sense_score, score)
         return sense_score
 
-    @classmethod
-    def get_synsets(cls, synset_indexes: List[int], word_synsets: WordSynsets) -> List[Synset]:
+    @staticmethod
+    def get_synsets(synset_indexes: List[int], word_synsets: List[Tuple[str, List[Synset]]]) -> List[Synset]:
         return [word_synsets[word_index][1][synset_index] for word_index, synset_index in enumerate(synset_indexes)]
+
+    @staticmethod
+    def sense_key(synset: Synset, lemma: str):
+        for l in synset.lemmas():
+            if l.name().lower() == lemma.lower():
+                return l.key()
+        print(f"No sense key found for {lemma} and {synset}")
+        return synset.lemmas()[0].key()
+
+    @staticmethod
+    def get_wordnet_synsets(word, pos, lemma=None):
+        synsets = wn.synsets(word, pos=get_pos(pos))
+
+        if len(synsets) == 0:
+            synsets = [l.synset() for l in wn.lemmas(lemma)]
+
+        return synsets

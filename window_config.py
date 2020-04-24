@@ -1,7 +1,8 @@
-from typing import List, Tuple, Optional
-from synset_utils import SynsetUtils
+from typing import List, Tuple
 
 from nltk.corpus.reader import Synset
+
+from synset_utils import SynsetUtils
 
 
 class WindowConfiguration(object):

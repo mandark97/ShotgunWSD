@@ -1,14 +1,11 @@
 import logging
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict
 
 from nltk.corpus.reader import Synset
 
-from pos_utils import get_pos
 from synset_relatedness import SynsetRelatedness
 from synset_utils import SynsetUtils
 from window_config import WindowConfiguration
-from word_synsets import WordSynsets
-from nltk.corpus import wordnet as wn
 
 ScoreMatrix = Dict[Tuple[int, int, int, int], float]
 
@@ -18,11 +15,12 @@ class LocalWSD(object):
     word_synsets: List[Tuple[str, List[Synset]]]
 
     # Maybe combine window_words and window_words_pos to a tuple
-    def __init__(self, word_offset: int, window_words: List[str], window_words_pos: List[str], number_configs: int,
-                 synset_relatedness: SynsetRelatedness):
+    def __init__(self, word_offset: int, window_words: List[str], window_words_pos: List[str],
+                 window_words_lemma: List[str], number_configs: int, synset_relatedness: SynsetRelatedness):
         self.word_offset = word_offset
         self.window_words = window_words
         self.window_words_pos = window_words_pos
+        self.window_words_lemma = window_words_lemma
         self.number_configs = number_configs
         self.synset_relatedness = synset_relatedness
 
@@ -37,11 +35,12 @@ class LocalWSD(object):
 
         self.generate_synset_combinations()
 
-    def build_window_synsets_array(self) -> WordSynsets:
+    def build_window_synsets_array(self) -> List[Tuple[str, List[Synset]]]:
         word_synsets = []
         # synsets_len = {} # TODO: Do we need this variable?
         for index, word in enumerate(self.window_words):
-            synsets = wn.synsets(word, pos=get_pos(self.window_words_pos[index]))
+            synsets = SynsetUtils.get_wordnet_synsets(word, pos=self.window_words_pos[index],
+                                                      lemma=self.window_words_lemma[index])
             # synsets_len[index] = len(synsets)
             if len(synsets) == 0:
                 word_synsets.append((word, [None]))
@@ -50,7 +49,7 @@ class LocalWSD(object):
 
         return word_synsets
 
-    def compute_relatedness(self, word_synsets: WordSynsets) -> ScoreMatrix:
+    def compute_relatedness(self, word_synsets: List[Tuple[str, List[Synset]]]) -> ScoreMatrix:
         logging.debug("Start relatedness computing")
         similarity_matrix = {}
 

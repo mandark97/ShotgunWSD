@@ -1,4 +1,3 @@
-import xml.etree.ElementTree as ET
 from typing import List
 from xml.dom import minidom
 
@@ -20,6 +19,7 @@ class Parser(object):
             words = []
             words_pos = []
             words_lemma = []
+            words_id = []
             for sentence in text.childNodes:
                 for word in sentence.childNodes:
                     if word.nodeName not in ["wf", "instance"]:
@@ -27,7 +27,8 @@ class Parser(object):
                     words.append(word.childNodes[0].nodeValue)
                     words_pos.append(word.getAttribute("pos"))
                     words_lemma.append(word.getAttribute("lemma"))
+                    words_id.append(word.getAttribute("id"))
 
-            documents.append(Document(text_id, words, words_pos, words_lemma))
+            documents.append(Document(text_id, words, words_pos, words_lemma, words_id))
 
         return documents

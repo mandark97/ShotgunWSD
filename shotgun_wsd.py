@@ -4,12 +4,13 @@ from functools import reduce, cmp_to_key
 from math import log
 from typing import List, Dict, Tuple, Optional, DefaultDict
 
+from nltk.corpus.reader import Synset
+
 from local_wsd import LocalWSD
 from parsed_document import Document
-from pos_utils import get_pos
 from synset_relatedness import SynsetRelatedness
+from synset_utils import SynsetUtils
 from window_config import WindowConfiguration, compare_by_length_and_value
-from nltk.corpus import wordnet as wn
 
 
 class ShotgunWSD(object):
@@ -25,7 +26,7 @@ class ShotgunWSD(object):
 
         super().__init__()
 
-    def run(self):
+    def run(self) -> List[Optional[Synset]]:
         logging.debug("Run algorithm")
         document_window_solutions = self.compute_windows()
         logging.debug(f"Found {len(document_window_solutions)} windows")
@@ -45,10 +46,12 @@ class ShotgunWSD(object):
         for word_index in range(0, len(self.document.words) - self.window_size):
             window_words = self.document.words[word_index:word_index + self.window_size]
             window_words_pos = self.document.words_pos[word_index:word_index + self.window_size]
+            window_words_lemma = self.document.words_lemma[word_index:word_index + self.window_size]
 
             # TODO some max synset combination black magic
-            local_wsd = LocalWSD(word_index, window_words, window_words_pos,
-                                 self.number_configs, self.synset_relatedness)
+            local_wsd = LocalWSD(word_offset=word_index, window_words=window_words, window_words_pos=window_words_pos,
+                                 window_words_lemma=window_words_lemma, number_configs=self.number_configs,
+                                 synset_relatedness=self.synset_relatedness)
             local_wsd.run()
 
             document_window_solutions[word_index] = local_wsd.windows_solutions
@@ -244,20 +247,21 @@ class ShotgunWSD(object):
 
         return results
 
-    def convertFinalSynsets(self, final_senses: List[Tuple[int, int]]):
+    def convertFinalSynsets(self, final_senses: List[Tuple[int, int]]) -> List[Optional[Synset]]:
         synsets = []
         for word_index, final_sense in enumerate(final_senses):
-            synsets.append((self.document.words[word_index], self.get_synset(final_sense)))
-            # synsets.append(final_sense)
+            synsets.append(self.get_synset(final_sense))
 
         return synsets
 
-    def get_synset(self, final_sense: Tuple[int, int]):
+    def get_synset(self, final_sense: Tuple[int, int]) -> Optional[Synset]:
         if final_sense is None:
             return None
 
         word_index, sense_index = final_sense
-        synsets = wn.synsets(self.document.words[word_index], pos=get_pos(self.document.words_pos[word_index]))
+        synsets = SynsetUtils.get_wordnet_synsets(self.document.words[word_index],
+                                                  pos=self.document.words_pos[word_index],
+                                                  lemma=self.document.words_lemma[word_index])
         if len(synsets) == 0:
             return None
         else:

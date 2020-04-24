@@ -1,13 +1,14 @@
 import logging
 
-from lesk import Lesk
-from operations import AddOperation, LogOperation, SumSquaredOperation
+from relatedness.lesk import Lesk
+from operations import AddOperation
 from parser import Parser
+from result_writer import ResultWriter
 from shotgun_wsd import ShotgunWSD
 from synset_utils import SynsetUtils
 
 documents = Parser().run()
-logging.basicConfig(level=logging.DEBUG, format='%(relativeCreated)6d %(threadName)s %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 
 document = documents[0]
 synset_relatedness = Lesk()
@@ -16,7 +17,5 @@ SynsetUtils.synset_relatedness = synset_relatedness
 shotgun_wsd = ShotgunWSD(document=document, window_size=2, number_configs=2, synset_relatedness=synset_relatedness,
                          min_synset_collision=2, max_synset_collision=4, number_of_votes=4)
 final_senses = shotgun_wsd.run()
-with open("results.txt", "w") as file:
-    for t in final_senses:
-        file.write(str(t))
-        file.write("\n")
+
+ResultWriter(document, final_senses).write("results.txt", mode=ResultWriter.SCORE)
