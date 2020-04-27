@@ -30,6 +30,8 @@ class WordEmbeddingRelatedness(SynsetRelatedness):
                                     self.model_path,
                                     binary=True)
 
+        self.extended_vocab = dict()
+
         if computation_sense == 'median':
             self.compute_sense = self.median_computation_sense
         else:
@@ -47,34 +49,37 @@ class WordEmbeddingRelatedness(SynsetRelatedness):
         if word in self.word_vec_model:
             return self.word_vec_model.word_vec(word)
 
+        if word in self.extended_vocab:
+            return self.extended_vocab[word]
+
         words = self.get_sense_bag(synset, word)
 
-        sense_embeddings = np.zeros(300)
+        sense_embeddings = []
         for w in words:
             if w is not None and w in self.word_vec_model:
                 temp_embedding = self.word_vec_model.word_vec(w)
                 sense_embeddings.append(temp_embedding[:])
 
         sense_embedding = self.compute_sense(sense_embeddings)
-        self.word_vec_model[word] = sense_embedding[:]
+        self.extended_vocab[word] = sense_embedding[:]
 
         return sense_embedding
 
     def get_sense_bag(self, synset: Synset, word: str) -> List:
         if synset is None:
-            return np.zeros(300)
+            return []
 
         pos = synset.pos()
         if pos == wn.NOUN:
-            return self.get_noun_sense_bag(self, synset)
+            return self.get_noun_sense_bag(synset)
         elif pos == wn.VERB:
-            return self.get_verb_sense_bag(self, synset)
+            return self.get_verb_sense_bag(synset)
         elif pos == wn.ADJ:
-            return self.get_adj_sense_bag(self, synset, word)
+            return self.get_adj_sense_bag(synset, word)
         elif pos == wn.ADV:
-            return self.get_adv_sense_bag(self, synset, word)
+            return self.get_adv_sense_bag(synset, word)
 
-        return np.zeros(300)
+        return[]
 
     def get_noun_sense_bag(self, synset: Synset) -> List:
         sense_bag = self.get_synset_bag(synset)
@@ -105,15 +110,11 @@ class WordEmbeddingRelatedness(SynsetRelatedness):
     def get_adj_sense_bag(self, synset: Synset) -> List:
         sense_bag = self.get_synset_bag(synset)
         attributes = SemanticRelation.get_attributes(synset)
-        similars = SemanticRelation.get_similars(synset)
         antonyms = SemanticRelation.get_antonyms(synset)
         pertainyms = SemanticRelation.get_pertainyms(synset)
 
         for attribute in attributes:
             sense_bag += self.get_synset_bag(attribute)
-
-        for similar in similars:
-            sense_bag += self.get_synset_bag(similar)
 
         for antonym in antonyms:
             sense_bag += self.get_synset_bag(antonym)
@@ -136,23 +137,27 @@ class WordEmbeddingRelatedness(SynsetRelatedness):
 
         return self.get_word_set_from_text(sense_bag)
 
-    def get_synset_bag(self, synset) -> List:
+    def get_synset_bag(self, synset) -> str:
         sense_bag = synset.definition()
         sense_examples = synset.examples()
         sense_keys = SemanticRelation.get_sense_keys(synset)
 
-        for sense_key in sense_keys:
-            sense_bag += sense_keys
-
         for sense_example in sense_examples:
-            sense_bag += sense_example
+            sense_bag += f' {sense_example} '
 
-        return sense_bag
+        for sense_key in sense_keys:
+            sense_bag += f' {sense_key} '
+
+        return f' {sense_bag} '
 
     def average_computation_sense(self, sense_embeddings):
+        if not sense_embeddings:
+            return np.zeros(300)
         return np.mean(sense_embeddings, axis=0)
 
     def median_computation_sense(self, sense_embeddings):
+        if not sense_embeddings:
+            return np.zeros(300)
         return gmean(sense_embeddings)
 
     def get_word_set_from_text(self, text: str) -> List:

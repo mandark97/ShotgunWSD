@@ -1,6 +1,7 @@
 import logging
 
 from relatedness.lesk import Lesk
+from relatedness.word_embedding import WordEmbeddingRelatedness
 from operations import AddOperation
 from parser import Parser
 from result_writer import ResultWriter
@@ -12,6 +13,8 @@ logging.basicConfig(level=logging.DEBUG, format='%(message)s')
 
 document = documents[0]
 synset_relatedness = Lesk()
+# synset_relatedness = WordEmbeddingRelatedness()
+# synset_relatedness = WordEmbeddingRelatedness('median')
 SynsetUtils.configuration_operation = AddOperation()
 SynsetUtils.synset_relatedness = synset_relatedness
 shotgun_wsd = ShotgunWSD(document=document, window_size=2, number_configs=2, synset_relatedness=synset_relatedness,
