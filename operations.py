@@ -1,5 +1,6 @@
-from abc import ABC, abstractmethod
 import math
+from abc import ABC, abstractmethod
+
 
 class ConfigurationOperation(ABC):
     def __init__(self):
@@ -31,4 +32,4 @@ class SumSquaredOperation(ConfigurationOperation):
         super(SumSquaredOperation, self).__init__()
 
     def apply_operation(self, accumulator: float, value: float) -> float:
-        return accumulator + value**2
+        return accumulator + value ** 2

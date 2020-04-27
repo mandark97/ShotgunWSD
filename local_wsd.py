@@ -1,14 +1,12 @@
-from typing import List, Tuple, Dict, Optional
+import logging
+from typing import List, Tuple, Dict
 
 from nltk.corpus.reader import Synset
 
-from pos_utils import get_pos
 from synset_relatedness import SynsetRelatedness
 from synset_utils import SynsetUtils
 from window_config import WindowConfiguration
-from nltk.corpus import wordnet as wn
 
-WordSynsets = List[Tuple[str, List[Synset]]]
 ScoreMatrix = Dict[Tuple[int, int, int, int], float]
 
 
@@ -17,11 +15,12 @@ class LocalWSD(object):
     word_synsets: List[Tuple[str, List[Synset]]]
 
     # Maybe combine window_words and window_words_pos to a tuple
-    def __init__(self, word_offset: int, window_words: List[str], window_words_pos: List[str], number_configs: int,
-                 synset_relatedness: SynsetRelatedness):
+    def __init__(self, word_offset: int, window_words: List[str], window_words_pos: List[str],
+                 window_words_lemma: List[str], number_configs: int, synset_relatedness: SynsetRelatedness):
         self.word_offset = word_offset
         self.window_words = window_words
         self.window_words_pos = window_words_pos
+        self.window_words_lemma = window_words_lemma
         self.number_configs = number_configs
         self.synset_relatedness = synset_relatedness
 
@@ -30,17 +29,19 @@ class LocalWSD(object):
         super().__init__()
 
     def run(self):
+        logging.debug(f"Starting for word_index: {self.word_offset}")
         self.word_synsets = self.build_window_synsets_array()
         self.similarity_matrix = self.compute_relatedness(self.word_synsets)
 
         self.generate_synset_combinations()
 
-    def build_window_synsets_array(self) -> WordSynsets:
+    def build_window_synsets_array(self) -> List[Tuple[str, List[Synset]]]:
         word_synsets = []
-        synsets_len = {}
+        # synsets_len = {} # TODO: Do we need this variable?
         for index, word in enumerate(self.window_words):
-            synsets = wn.synsets(word, pos=get_pos(self.window_words_pos[index]))
-            synsets_len[index] = len(synsets)
+            synsets = SynsetUtils.get_wordnet_synsets(word, pos=self.window_words_pos[index],
+                                                      lemma=self.window_words_lemma[index])
+            # synsets_len[index] = len(synsets)
             if len(synsets) == 0:
                 word_synsets.append((word, [None]))
             else:
@@ -48,17 +49,20 @@ class LocalWSD(object):
 
         return word_synsets
 
-    def compute_relatedness(self, word_synsets: WordSynsets) -> ScoreMatrix:
+    def compute_relatedness(self, word_synsets: List[Tuple[str, List[Synset]]]) -> ScoreMatrix:
+        logging.debug("Start relatedness computing")
         similarity_matrix = {}
 
         for word1_index, (word1, synsets1) in enumerate(word_synsets):
             for synset1_index, synset1 in enumerate(synsets1):
-                for word2_index, (word2, synsets2) in enumerate(word_synsets[word1_index:], start=word1_index):
+                for word2_index, (word2, synsets2) in enumerate(word_synsets[word1_index + 1:], start=word1_index + 1):
                     for synset2_index, synset2 in enumerate(synsets2):
+                        logging.debug(f"Compute relatedness for {word1}, {synset1}, {word2}, {synset2}")
                         sim = self.synset_relatedness.compute_similarity(word1, synset1, word2, synset2)
                         similarity_matrix[(word1_index, synset1_index, word2_index, synset2_index)] = sim
                         similarity_matrix[(word2_index, synset2_index, word1_index, synset1_index)] = sim
 
+        logging.debug("Finished computing relatedness matrix")
         return similarity_matrix
 
     def generate_synset_combinations(self):
@@ -71,6 +75,8 @@ class LocalWSD(object):
         else:
             for window_configuration in self.windows_solutions:
                 window_configuration.set_global_ids(self.word_offset)
+
+        logging.debug("Finished generation synset_combinations")
 
     def combinations_recursion(self, word_index: int, synset_indexes: List[int]):
         """

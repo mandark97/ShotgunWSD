@@ -5,15 +5,18 @@ from nltk.corpus import stopwords
 from nltk.corpus.reader.wordnet import Synset
 from nltk.stem.snowball import SnowballStemmer
 
+
 def stringify(f):
     """
     Wraps around any function f(s: Synset) -> list[Synset]:
     and returns the concatenated glosses of the list elements
     :returns str
     """
+
     def inner(synset: Synset) -> str:
         synsets = f(synset)
         return " ".join([s.definition() for s in synsets])
+
     return inner
 
 
@@ -43,7 +46,6 @@ def get_also_sees(synset: Synset) -> str:
 
 
 class Lesk(SynsetRelatedness):
-
     relations = {
         'hyper': get_meronyms,
         'hypo': get_hyponyms,
@@ -80,7 +82,7 @@ class Lesk(SynsetRelatedness):
         return score
 
     @staticmethod
-    def compute_noun_similarity(synset1 : Synset, synset2 : Synset) -> float:
+    def compute_noun_similarity(synset1: Synset, synset2: Synset) -> float:
         return Lesk.score_relation_pairs(synset1, synset2, [
             ('hypo', 'mero'),
             ('hypo', 'hypo'),
@@ -90,27 +92,27 @@ class Lesk(SynsetRelatedness):
         ])
 
     @staticmethod
-    def compute_adjective_similarity(synset1 : Synset, synset2 : Synset) -> float:
+    def compute_adjective_similarity(synset1: Synset, synset2: Synset) -> float:
         return Lesk.score_relation_pairs(synset1, synset2, [
             ('also', 'gloss'),
             ('attr', 'gloss'),
-            ('gloss', 'mero'),
+            ('gloss', 'gloss'),
             ('ex', 'gloss'),
-            ('gloss', 'hype'),
+            ('gloss', 'hyper'),
         ])
 
     @staticmethod
-    def compute_verb_similarity(synset1 : Synset, synset2 : Synset) -> float:
+    def compute_verb_similarity(synset1: Synset, synset2: Synset) -> float:
         return Lesk.score_relation_pairs(synset1, synset2, [
             ('ex', 'ex'),
-            ('ex', 'hype'),
+            ('ex', 'hyper'),
             ('hypo', 'hypo'),
             ('gloss', 'hypo'),
             ('ex', 'gloss')
         ])
 
     @staticmethod
-    def compute_simple_similarity(synset1 : Synset, synset2 : Synset) -> float:
+    def compute_simple_similarity(synset1: Synset, synset2: Synset) -> float:
         gloss1 = Lesk.relations['gloss'](synset1) + Lesk.relations['ex'](synset1)
         gloss2 = Lesk.relations['gloss'](synset2) + Lesk.relations['ex'](synset2)
         return Lesk.get_score(gloss1, gloss2)
@@ -144,8 +146,8 @@ class Lesk(SynsetRelatedness):
                     # overlap, measure it
                     if w1 == w2:
                         over_size = 1
-                        oi = i+1
-                        oj = j+1
+                        oi = i + 1
+                        oj = j + 1
                         while oi < len(gloss1) and oj < len(gloss2) and gloss1[oi] == gloss2[oj]:
                             oi += 1
                             oj += 1
@@ -157,12 +159,15 @@ class Lesk(SynsetRelatedness):
             if max_over_size == 0:
                 has_diffs = False
             else:
-                score += max_over_size**2
+                score += max_over_size ** 2
                 del gloss1[max_over_i:max_over_i + max_over_size]
                 del gloss2[max_over_j:max_over_j + max_over_size]
         return score
 
-    def compute_similarity(self, word1 : str, synset1 : Synset, word2 : str, synset2 : Synset) -> float:
+    def compute_similarity(self, word1: str, synset1: Synset, word2: str, synset2: Synset) -> float:
+        if synset1 is None or synset2 is None:
+            return 0.
+
         pos1 = synset1.pos()
         pos2 = synset2.pos()
         if pos1 == pos2:
