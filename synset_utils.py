@@ -22,24 +22,19 @@ class SynsetUtils(object):
     # TODO global parameters to be set in main
     configuration_operation: ConfigurationOperation = None
     synset_relatedness: SynsetRelatedness = None
-    cache_synset_relatedness: Dict[str, float] = {}
+    cache_synset_relatedness: Dict[Tuple[Tuple[int, int], Tuple[int, int]], float] = {}
 
     @staticmethod
     def compute_configuration_score(synsets: List[int], scores_matrix: Dict[Tuple[int, int, int, int], float]) -> float:
         sense_score = SynsetUtils.configuration_operation.initial_score
         for word_index1, synset_index1 in enumerate(synsets):
             for word_index2, synset_index2 in enumerate(synsets[word_index1 + 1:], start=word_index1 + 1):
-                sense_score += max(
-                    SynsetUtils.configuration_operation.apply_operation(sense_score, scores_matrix[
-                        (word_index1, synset_index1, word_index2, synset_index2)]),
-                    SynsetUtils.configuration_operation.apply_operation(sense_score, scores_matrix[
-                        (word_index2, synset_index2, word_index1, synset_index1)])
-                )
-
+                sense_score = SynsetUtils.configuration_operation.apply_operation(sense_score, scores_matrix[(word_index1, synset_index1, word_index2, synset_index2)])
+                sense_score = SynsetUtils.configuration_operation.apply_operation(sense_score, scores_matrix[(word_index2, synset_index2, word_index1, synset_index1)])
         return sense_score
 
     @staticmethod
-    def compute_configuration_scores(synsets: List[int], words: List[str],
+    def compute_configuration_scores(synsets: List[Synset], words: List[str],
                                      global_synsets: List[Tuple[int, int]]) -> float:
         sense_score = SynsetUtils.configuration_operation.initial_score
         for i in range(len(synsets) - 1):
@@ -47,8 +42,8 @@ class SynsetUtils(object):
             target_word = words[i]
             target_global_sense = global_synsets[i]
             for j in range(i + 1, len(synsets)):
-                key1 = target_global_sense + "||" + global_synsets[j]
-                key2 = global_synsets[j] + "||" + target_global_sense
+                key1 = (target_global_sense, global_synsets[j])
+                key2 = (global_synsets[j], target_global_sense)
                 if key1 in SynsetUtils.cache_synset_relatedness:
                     score = SynsetUtils.cache_synset_relatedness[key1]
                 elif key2 in SynsetUtils.cache_synset_relatedness:
