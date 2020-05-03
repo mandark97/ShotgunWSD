@@ -52,7 +52,7 @@ class WordEmbeddingRelatedness(SynsetRelatedness):
         if word in self.extended_vocab:
             return self.extended_vocab[word]
 
-        words = self.get_sense_bag(synset, word)
+        words = self.get_sense_bag(synset)
 
         sense_embeddings = []
         for w in words:
@@ -65,7 +65,7 @@ class WordEmbeddingRelatedness(SynsetRelatedness):
 
         return sense_embedding
 
-    def get_sense_bag(self, synset: Synset, word: str) -> List:
+    def get_sense_bag(self, synset: Synset) -> List:
         if synset is None:
             return []
 
@@ -75,9 +75,9 @@ class WordEmbeddingRelatedness(SynsetRelatedness):
         elif pos == wn.VERB:
             return self.get_verb_sense_bag(synset)
         elif pos == wn.ADJ:
-            return self.get_adj_sense_bag(synset, word)
+            return self.get_adj_sense_bag(synset)
         elif pos == wn.ADV:
-            return self.get_adv_sense_bag(synset, word)
+            return self.get_adv_sense_bag(synset)
 
         return[]
 
@@ -117,27 +117,31 @@ class WordEmbeddingRelatedness(SynsetRelatedness):
             sense_bag += self.get_synset_bag(attribute)
 
         for antonym in antonyms:
-            sense_bag += self.get_synset_bag(antonym)
+            sense_bag += f' {antonym.name()} '
 
         for pertainym in pertainyms:
-            sense_bag += self.get_synset_bag(pertainym)
+            sense_bag += f' {pertainym.name()} '
 
         return self.get_word_set_from_text(sense_bag)
 
-    def get_adv_sense_bag(self, synset) -> List:
+    def get_adv_sense_bag(self, synset: Synset) -> List:
         sense_bag = self.get_synset_bag(synset)
         topics = SemanticRelation.get_topics(synset)
+        antonyms = SemanticRelation.get_antonyms(synset)
         pertainyms = SemanticRelation.get_pertainyms(synset)
 
         for topic in topics:
             sense_bag += self.get_synset_bag(topic)
 
+        for antonym in antonyms:
+            sense_bag += f' {antonym.name()} '
+
         for pertainym in pertainyms:
-            sense_bag += self.get_synset_bag(pertainym)
+            sense_bag += f' {pertainym.name()} '
 
         return self.get_word_set_from_text(sense_bag)
 
-    def get_synset_bag(self, synset) -> str:
+    def get_synset_bag(self, synset: Synset) -> str:
         sense_bag = synset.definition()
         sense_examples = synset.examples()
         sense_keys = SemanticRelation.get_sense_keys(synset)
@@ -150,12 +154,12 @@ class WordEmbeddingRelatedness(SynsetRelatedness):
 
         return f' {sense_bag} '
 
-    def average_computation_sense(self, sense_embeddings):
+    def average_computation_sense(self, sense_embeddings: List) -> List:
         if not sense_embeddings:
             return np.zeros(300)
         return np.mean(sense_embeddings, axis=0)
 
-    def median_computation_sense(self, sense_embeddings):
+    def median_computation_sense(self, sense_embeddings: List) -> List:
         if not sense_embeddings:
             return np.zeros(300)
         return gmean(sense_embeddings)
