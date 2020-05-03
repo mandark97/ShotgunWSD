@@ -1,4 +1,4 @@
-from typing import List, Optional, TextIO
+from typing import List, Optional, TextIO, Set, Dict
 
 from nltk.corpus.reader import Synset
 
@@ -13,6 +13,22 @@ class ResultWriter(object):
     def __init__(self, document: Document, results: List[Optional[Synset]]):
         self.document = document
         self.results = results
+
+    def to_dict(self) -> Dict[str, Set[str]]:
+        results = {}
+        for word_index, synset in enumerate(self.results):
+            id = self.document.words_id[word_index]
+            if id == "":
+                continue
+
+            if synset is None:
+                sense = ""
+            else:
+                sense = SynsetUtils.sense_key(synset, self.document.words_lemma[word_index])
+
+            results[id] = {sense}
+
+        return results
 
     def write(self, output_path: str, mode: str = "human"):
         with open(output_path, "w") as file_writer:

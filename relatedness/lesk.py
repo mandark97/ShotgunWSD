@@ -1,5 +1,5 @@
 import nltk
-from synset_relatedness import SynsetRelatedness
+from relatedness.synset_relatedness import SynsetRelatedness
 from nltk.corpus import wordnet as wn
 from nltk.corpus import stopwords
 from nltk.corpus.reader.wordnet import Synset

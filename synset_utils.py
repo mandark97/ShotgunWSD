@@ -4,7 +4,7 @@ from nltk.corpus import wordnet as wn
 from nltk.corpus.reader import Synset
 
 from operations import ConfigurationOperation
-from synset_relatedness import SynsetRelatedness
+from relatedness.synset_relatedness import SynsetRelatedness
 
 POS_MAPPING = {
     "NOUN": wn.NOUN,

@@ -3,8 +3,9 @@ from typing import List, Tuple, Dict
 
 from nltk.corpus.reader import Synset
 
-from synset_relatedness import SynsetRelatedness
+from relatedness.synset_relatedness import SynsetRelatedness
 from synset_utils import SynsetUtils
+from utils import timing
 from window_config import WindowConfiguration
 
 ScoreMatrix = Dict[Tuple[int, int, int, int], float]
@@ -28,6 +29,7 @@ class LocalWSD(object):
 
         super().__init__()
 
+    @timing
     def run(self):
         logging.debug(f"Starting for word_index: {self.word_offset}")
         self.word_synsets = self.build_window_synsets_array()
@@ -37,11 +39,9 @@ class LocalWSD(object):
 
     def build_window_synsets_array(self) -> List[Tuple[str, List[Synset]]]:
         word_synsets = []
-        # synsets_len = {} # TODO: Do we need this variable?
         for index, word in enumerate(self.window_words):
             synsets = SynsetUtils.get_wordnet_synsets(word, pos=self.window_words_pos[index],
                                                       lemma=self.window_words_lemma[index])
-            # synsets_len[index] = len(synsets)
             if len(synsets) == 0:
                 word_synsets.append((word, [None]))
             else:
@@ -57,7 +57,7 @@ class LocalWSD(object):
             for synset1_index, synset1 in enumerate(synsets1):
                 for word2_index, (word2, synsets2) in enumerate(word_synsets[word1_index + 1:], start=word1_index + 1):
                     for synset2_index, synset2 in enumerate(synsets2):
-                        logging.debug(f"Compute relatedness for {word1}, {synset1}, {word2}, {synset2}")
+                        # logging.debug(f"Compute relatedness for {word1}, {synset1}, {word2}, {synset2}")
                         sim = self.synset_relatedness.compute_similarity(word1, synset1, word2, synset2)
                         similarity_matrix[(word1_index, synset1_index, word2_index, synset2_index)] = sim
                         similarity_matrix[(word2_index, synset2_index, word1_index, synset1_index)] = sim

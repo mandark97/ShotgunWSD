@@ -10,7 +10,8 @@ from nltk.stem.snowball import SnowballStemmer
 from os import path
 from scipy.stats.mstats import gmean
 from scipy.spatial.distance import cosine
-from synset_relatedness import SynsetRelatedness
+
+from relatedness.synset_relatedness import SynsetRelatedness
 from semantic_relation import SemanticRelation
 
 from typing import List

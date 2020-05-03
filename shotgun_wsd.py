@@ -8,8 +8,9 @@ from nltk.corpus.reader import Synset
 
 from local_wsd import LocalWSD
 from parsed_document import Document
-from synset_relatedness import SynsetRelatedness
+from relatedness.synset_relatedness import SynsetRelatedness
 from synset_utils import SynsetUtils
+from utils import timing
 from window_config import WindowConfiguration, compare_by_length_and_value
 
 
@@ -26,11 +27,14 @@ class ShotgunWSD(object):
 
         super().__init__()
 
+    @timing
     def run(self) -> List[Optional[Synset]]:
+        logging.info(f"{len(self.document)} words in the document")
         logging.debug("Run algorithm")
         document_window_solutions = self.compute_windows()
-        logging.debug(f"Found {len(document_window_solutions)} windows")
+        logging.info(f"Found {len(document_window_solutions)} windows")
         document_window_solutions = self.merge_window_solutions(document_window_solutions)
+        logging.info(f"{len(document_window_solutions)} windows after merging")
 
         sense_votes = self.vote_senses(document_window_solutions)
         senses = self.select_senses(document_window_solutions, sense_votes)
@@ -39,6 +43,7 @@ class ShotgunWSD(object):
 
         return convertedSynsets
 
+    @timing
     def compute_windows(self) -> Dict[int, List[WindowConfiguration]]:
         logging.debug("Compute windows")
         document_window_solutions = {}
@@ -58,6 +63,7 @@ class ShotgunWSD(object):
 
         return document_window_solutions
 
+    @timing
     def merge_window_solutions(self, document_window_solutions) -> Dict[int, List[WindowConfiguration]]:
         logging.debug(f"Start merging {len(document_window_solutions)} window solutions")
         merged_windows = None
@@ -85,7 +91,6 @@ class ShotgunWSD(object):
                     for window2 in config_list2:
                         # collided = False
                         if WindowConfiguration.has_collisions(window1, window2, j + 1, synset_collisions):
-                            logging.debug(f"merging {window1} and {window2}")
                             merged_window = WindowConfiguration.merge(window1, window2, j + 1)
                             if merged_window != None:
                                 # collided = True
@@ -94,6 +99,7 @@ class ShotgunWSD(object):
 
         return document_window_solutions
 
+    @timing
     def vote_senses(self, document_window_solutions: Dict[int, List[WindowConfiguration]]) -> List[
         Optional[Tuple[int, int]]]:
         all_windows: List[WindowConfiguration] = reduce(lambda x, y: x + y, document_window_solutions.values())
@@ -174,6 +180,7 @@ class ShotgunWSD(object):
 
         return returned_senses
 
+    @timing
     def select_senses(self, document_window_solutions: Dict[int, List[WindowConfiguration]],
                       sense_votes: List[Optional[Tuple[int, int]]]) -> List[Optional[Tuple[int, int]]]:
         final_synsets = [None] * len(self.document)

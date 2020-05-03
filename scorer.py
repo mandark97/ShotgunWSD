@@ -1,14 +1,19 @@
+from collections import defaultdict
 from typing import Dict, Set
 
 
 class Scorer(object):
 
-    def __init__(self, results_path: str, answers_path: str):
-        self.results = self._parse_file(results_path)
+    def __init__(self, answers_path: str, results_path: str = None, results: Dict[str, Set[str]] = None):
+        if results is not None:
+            self.results = results
+        else:
+            self.results = self._parse_file(results_path)
+
         self.answers = self._parse_file(answers_path)
 
     def score(self) -> Dict[str, float]:
-        total = correct = wrong = 0
+        correct, wrong, total = 0, 0, 0
 
         for pos in self.answers:
             if pos not in self.results:
@@ -18,7 +23,6 @@ class Scorer(object):
                 correct += 1
             else:
                 wrong += 1
-
             total += 1
 
         precision = correct / (correct + wrong)
@@ -38,20 +42,16 @@ class Scorer(object):
         }
 
     def _parse_file(self, path: str) -> Dict[str, Set[str]]:
-        word_dict = dict()
+        word_dict = defaultdict(set)
 
-        file = open(path, 'r')
-        for line in file:
-            elements = line.split()
+        with open(path, 'r') as file:
+            for line in file:
+                pos, *senses = line.split()
 
-            if len(elements) < 2:
-                continue
+                if senses is None:
+                    continue
 
-            pos = elements[0]
-            if pos not in word_dict:
-                word_dict[pos] = set()
-
-            for sense in elements[1:]:
-                word_dict[pos].add(sense)
+                for sense in senses:
+                    word_dict[pos].add(sense)
 
         return word_dict
