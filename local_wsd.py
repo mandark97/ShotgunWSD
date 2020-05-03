@@ -94,16 +94,16 @@ class LocalWSD(object):
                 configuration_synsets: List[Synset] = SynsetUtils.get_synsets(synset_indexes, self.word_synsets)
 
                 if len(self.windows_solutions) >= self.number_configs:
-                    if score >= self.windows_solutions[-1].score:
+                    if score >= self.windows_solutions[-1].get_score():
                         self.windows_solutions.append(WindowConfiguration(synset_indexes, self.window_words,
                                                                           self.window_words_pos, configuration_synsets,
                                                                           score))
 
-                        sorted(self.windows_solutions, key=lambda window: window.score, reverse=True)
+                        sorted(self.windows_solutions, key=lambda window: window.get_score(), reverse=True)
                         self.windows_solutions.pop()
                 else:
                     self.windows_solutions.append(WindowConfiguration(synset_indexes, self.window_words,
                                                                       self.window_words_pos, configuration_synsets,
                                                                       score))
                     if len(self.windows_solutions) == self.number_configs:
-                        sorted(self.windows_solutions, key=lambda window: window.score, reverse=True)
+                        sorted(self.windows_solutions, key=lambda window: window.get_score(), reverse=True)

@@ -196,10 +196,10 @@ class ShotgunWSD(object):
                     if sense_votes is None or sense_votes[word_index + window_index] is None:
                         if final_synsets[word_index + window_index] is None or \
                                 len(wsd) >= synset_window_size[word_index + window_index] and \
-                                wsd.score > synset_window_score[word_index + window_index]:
+                                wsd.get_score() > synset_window_score[word_index + window_index]:
                             final_synsets[word_index + window_index] = global_synset
                             synset_window_score[word_index + window_index] = len(wsd)
-                            synset_window_score[word_index + window_index] = wsd.score
+                            synset_window_score[word_index + window_index] = wsd.get_score()
 
                     else:
                         final_synsets[word_index + window_index] = sense_votes[word_index + window_index]

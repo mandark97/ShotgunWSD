@@ -9,7 +9,7 @@ class WindowConfiguration(object):
     global_synsets: List[Tuple[int, int]]
 
     def __init__(self, synset_indexes: List[int], window_words: List[str], window_words_pos: List[str],
-                 configuration_synsets: List[Synset], score: float, global_synsets: List[Tuple[int, int]] = None):
+                 configuration_synsets: List[Synset], score: float = -1, global_synsets: List[Tuple[int, int]] = None):
         """
         Configuration of the window
         :param synset_indexes: Indexes of the senses chosen for this configuration
@@ -41,6 +41,11 @@ class WindowConfiguration(object):
     def contains_global_sense(self, word_id: int):
         return word_id >= self.first_global_sense and word_id <= self.last_global_sense
 
+    def get_score(self):
+        if self.score == -1:
+            self.score = SynsetUtils.compute_configuration_scores(self.configuration_synsets, self.window_words, self.global_synsets)
+        return self.score
+
     def __len__(self):
         return len(self.synset_indexes)
 
@@ -63,17 +68,14 @@ class WindowConfiguration(object):
         window_words = window1.window_words + window2.window_words[start_at:]
         window_words_pos = window1.window_words_pos + window2.window_words_pos[start_at:]
         configuration_synsets = window1.configuration_synsets + window2.configuration_synsets[start_at:]
-
-        score = SynsetUtils.compute_configuration_scores(synsets_indexes, window_words, global_senses)
-        return WindowConfiguration(synsets_indexes, window_words, window_words_pos, configuration_synsets, score,
-                                   global_senses)
+        return WindowConfiguration(synsets_indexes, window_words, window_words_pos, configuration_synsets, -1, global_senses)
 
 
 def compare_by_length_and_value(window_config1: WindowConfiguration, window_config2: WindowConfiguration):
     if len(window_config1) == len(window_config2):
-        if window_config1.score == window_config2.score:
+        if window_config1.get_score() == window_config2.get_score():
             return 0
         else:
-            return 1 if window_config1.score > window_config2.score else -1
+            return 1 if window_config1.get_score() > window_config2.get_score() else -1
     else:
         return 1 if len(window_config1) > len(window_config2) else -1
