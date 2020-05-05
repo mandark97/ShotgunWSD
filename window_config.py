@@ -43,11 +43,15 @@ class WindowConfiguration(object):
 
     def get_score(self):
         if self.score == -1:
-            self.score = SynsetUtils.compute_configuration_scores(self.configuration_synsets, self.window_words, self.global_synsets)
+            self.score = SynsetUtils.compute_configuration_scores(self.configuration_synsets, self.window_words,
+                                                                  self.global_synsets)
         return self.score
 
     def __len__(self):
         return len(self.synset_indexes)
+
+    def __repr__(self):
+        return repr((len(self.synset_indexes), self.score, self.global_synsets))
 
     @staticmethod
     def has_collisions(window1: "WindowConfiguration", window2: "WindowConfiguration", offset: int,
@@ -68,7 +72,9 @@ class WindowConfiguration(object):
         window_words = window1.window_words + window2.window_words[start_at:]
         window_words_pos = window1.window_words_pos + window2.window_words_pos[start_at:]
         configuration_synsets = window1.configuration_synsets + window2.configuration_synsets[start_at:]
-        return WindowConfiguration(synsets_indexes, window_words, window_words_pos, configuration_synsets, -1, global_senses)
+
+        return WindowConfiguration(synsets_indexes, window_words, window_words_pos, configuration_synsets, -1,
+                                   global_senses)
 
 
 def compare_by_length_and_value(window_config1: WindowConfiguration, window_config2: WindowConfiguration):
@@ -76,6 +82,6 @@ def compare_by_length_and_value(window_config1: WindowConfiguration, window_conf
         if window_config1.get_score() == window_config2.get_score():
             return 0
         else:
-            return 1 if window_config1.get_score() > window_config2.get_score() else -1
+            return 1 if window_config2.get_score() > window_config1.get_score() else -1
     else:
-        return 1 if len(window_config1) > len(window_config2) else -1
+        return 1 if len(window_config2) > len(window_config1) else -1

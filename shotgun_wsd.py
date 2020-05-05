@@ -103,7 +103,7 @@ class ShotgunWSD(object):
     def vote_senses(self, document_window_solutions: Dict[int, List[WindowConfiguration]]) -> List[
         Optional[Tuple[int, int]]]:
         all_windows: List[WindowConfiguration] = reduce(lambda x, y: x + y, document_window_solutions.values())
-        sorted(all_windows, key=len, reverse=True)
+        all_windows = sorted(all_windows, key=len, reverse=True)
         word_sense_weights = self.compute_word_sense_weights(all_windows)
 
         max_weights: List[float] = [0.0] * len(self.document)
@@ -136,7 +136,7 @@ class ShotgunWSD(object):
             temp_indexed_list = list(filter(lambda window: window.contains_global_sense(word_index), wsd_windows))
             temp_indexed_list = self.extract_wsd_windows(temp_indexed_list)
 
-            sorted(temp_indexed_list, key=cmp_to_key(compare_by_length_and_value))
+            temp_indexed_list = sorted(temp_indexed_list, key=cmp_to_key(compare_by_length_and_value))
 
             for wsd in temp_indexed_list:
                 if no_of_windows == self.number_of_votes:
@@ -191,7 +191,7 @@ class ShotgunWSD(object):
         for word_index, window_solutions in document_window_solutions.items():
             if window_solutions is None or len(window_solutions) == 0:
                 continue
-            sorted(window_solutions, key=len, reverse=True)
+            window_solutions = sorted(window_solutions, key=len, reverse=True)
 
             max_length = len(window_solutions[0])
 
@@ -204,7 +204,7 @@ class ShotgunWSD(object):
                         if final_synsets[word_index + window_index] is None or \
                                 len(wsd) >= synset_window_size[word_index + window_index] and \
                                 wsd.get_score() > synset_window_score[word_index + window_index]:
-                            final_synsets[word_index + window_index] = global_synset
+                            final_synsets[word_index + window_index] = (word_index + window_index, global_synset)
                             synset_window_score[word_index + window_index] = len(wsd)
                             synset_window_score[word_index + window_index] = wsd.get_score()
 

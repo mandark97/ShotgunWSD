@@ -22,8 +22,8 @@ synset_relatedness = Lesk()
 # synset_relatedness = WordEmbeddingRelatedness('median')
 SynsetUtils.configuration_operation = AddOperation()
 SynsetUtils.synset_relatedness = synset_relatedness
-shotgun_wsd = ShotgunWSD(document=document, window_size=8, number_configs=20, synset_relatedness=synset_relatedness,
-                         min_synset_collision=1, max_synset_collision=4, number_of_votes=15)
+shotgun_wsd = ShotgunWSD(document=document, window_size=8, number_configs=15, synset_relatedness=synset_relatedness,
+                         min_synset_collision=1, max_synset_collision=4, number_of_votes=50)
 final_senses = shotgun_wsd.run()
 
 result_writer = ResultWriter(document, final_senses)
