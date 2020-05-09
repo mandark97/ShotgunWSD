@@ -30,11 +30,8 @@ class ShotgunWSD(object):
     @timing
     def run(self) -> List[Optional[Synset]]:
         logging.info(f"{len(self.document)} words in the document")
-        logging.debug("Run algorithm")
         document_window_solutions = self.compute_windows()
-        logging.info(f"Found {len(document_window_solutions)} windows")
         document_window_solutions = self.merge_window_solutions(document_window_solutions)
-        logging.info(f"{len(document_window_solutions)} windows after merging")
 
         sense_votes = self.vote_senses(document_window_solutions)
         senses = self.select_senses(document_window_solutions, sense_votes)
@@ -74,7 +71,7 @@ class ShotgunWSD(object):
         logging.debug(f"Obtained {len(merged_windows)}")
         return merged_windows
 
-    # works?
+    @timing
     def merge_windows(self, document_window_solutions: Dict[int, List[WindowConfiguration]],
                       synset_collisions: int) -> Dict[int, List[WindowConfiguration]]:
         for l in range(len(self.document.words)):
@@ -213,6 +210,7 @@ class ShotgunWSD(object):
 
         return final_synsets
 
+    @timing
     def detect_most_used_senses(self, senses: List[Optional[Tuple[int, int]]]) -> List[Tuple[int, int]]:
         word_sense_count: DefaultDict[str, DefaultDict[int, int]] = defaultdict(lambda: defaultdict(int))
 

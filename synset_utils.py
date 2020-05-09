@@ -29,8 +29,10 @@ class SynsetUtils(object):
         sense_score = SynsetUtils.configuration_operation.initial_score
         for word_index1, synset_index1 in enumerate(synsets):
             for word_index2, synset_index2 in enumerate(synsets[word_index1 + 1:], start=word_index1 + 1):
-                sense_score = SynsetUtils.configuration_operation.apply_operation(sense_score, scores_matrix[(word_index1, synset_index1, word_index2, synset_index2)])
-                sense_score = SynsetUtils.configuration_operation.apply_operation(sense_score, scores_matrix[(word_index2, synset_index2, word_index1, synset_index1)])
+                sense_score = SynsetUtils.configuration_operation.apply_operation(sense_score, scores_matrix[
+                    (word_index1, synset_index1, word_index2, synset_index2)])
+                sense_score = SynsetUtils.configuration_operation.apply_operation(sense_score, scores_matrix[
+                    (word_index2, synset_index2, word_index1, synset_index1)])
         return sense_score
 
     @staticmethod
@@ -70,9 +72,10 @@ class SynsetUtils(object):
 
     @staticmethod
     def get_wordnet_synsets(word, pos, lemma=None):
-        synsets = wn.synsets(word, pos=get_pos(pos))
+        word_pos = get_pos(pos)
+        # synsets = [synset for synset in wn.synsets(word, pos=word_pos)]
 
-        if len(synsets) == 0:
-            synsets = [l.synset() for l in wn.lemmas(lemma)]
+        # if len(synsets) == 0:
+        synsets = [l.synset() for l in wn.lemmas(lemma) if l.synset().pos() == word_pos]
 
         return synsets

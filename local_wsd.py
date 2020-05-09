@@ -29,7 +29,6 @@ class LocalWSD(object):
 
         super().__init__()
 
-    @timing
     def run(self):
         logging.debug(f"Starting for word_index: {self.word_offset}")
         self.word_synsets = self.build_window_synsets_array()

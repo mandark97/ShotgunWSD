@@ -14,21 +14,26 @@ ANSWERS_PATH = "datasets/semeval2013/semeval2013.gold.key.txt"
 RESULTS_PATH = "results.txt"
 
 documents = Parser(filename=DOCUMENTS_PATH).run()
-logging.basicConfig(level=logging.INFO, format='%(message)s')
+logging.basicConfig(level=logging.INFO,
+                    format='%(message)s', filename="run.log")
 
-document = documents[0]
+# document = documents[0]
 synset_relatedness = Lesk()
 # synset_relatedness = WordEmbeddingRelatedness()
 # synset_relatedness = WordEmbeddingRelatedness('median')
 SynsetUtils.configuration_operation = AddOperation()
 SynsetUtils.synset_relatedness = synset_relatedness
-shotgun_wsd = ShotgunWSD(document=document, window_size=8, number_configs=15, synset_relatedness=synset_relatedness,
-                         min_synset_collision=1, max_synset_collision=4, number_of_votes=50)
-final_senses = shotgun_wsd.run()
 
-result_writer = ResultWriter(document, final_senses)
-result_writer.write(RESULTS_PATH, mode=ResultWriter.SCORE)
+results_dict = {}
+for document in documents:
+    shotgun_wsd = ShotgunWSD(document=document, window_size=2, number_configs=4, synset_relatedness=synset_relatedness,
+                             min_synset_collision=1, max_synset_collision=4, number_of_votes=10)
+    final_senses = shotgun_wsd.run()
 
-scorer = Scorer(results=result_writer.to_dict(), answers_path=ANSWERS_PATH)
+    result_writer = ResultWriter(document, final_senses)
+    results_dict.update(result_writer.to_dict())
+
+# result_writer.write(RESULTS_PATH, mode=ResultWriter.SCORE)
+scorer = Scorer(results=results_dict, answers_path=ANSWERS_PATH)
 scorer_results = scorer.score()
 print(scorer_results)
