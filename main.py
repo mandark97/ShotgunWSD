@@ -2,7 +2,7 @@ import logging
 
 from relatedness.lesk import Lesk
 from relatedness.word_embedding import WordEmbeddingRelatedness
-from operations import AddOperation
+from operations import AddOperation, SumSquaredOperation, LogOperation
 from parser import Parser
 from result_writer import ResultWriter
 from scorer import Scorer
@@ -21,13 +21,13 @@ logging.basicConfig(level=logging.INFO,
 synset_relatedness = Lesk()
 # synset_relatedness = WordEmbeddingRelatedness()
 # synset_relatedness = WordEmbeddingRelatedness('median')
-SynsetUtils.configuration_operation = AddOperation()
+SynsetUtils.configuration_operation = SumSquaredOperation()
 SynsetUtils.synset_relatedness = synset_relatedness
 
 results_dict = {}
 for document in documents:
-    shotgun_wsd = ShotgunWSD(document=document, window_size=2, number_configs=4, synset_relatedness=synset_relatedness,
-                             min_synset_collision=1, max_synset_collision=4, number_of_votes=10)
+    shotgun_wsd = ShotgunWSD(document=document, window_size=8, number_configs=15, synset_relatedness=synset_relatedness,
+                             min_synset_collision=1, max_synset_collision=4, number_of_votes=50)
     final_senses = shotgun_wsd.run()
 
     result_writer = ResultWriter(document, final_senses)

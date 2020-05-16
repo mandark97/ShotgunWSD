@@ -25,13 +25,15 @@ class ShotgunWSD(object):
         self.max_synset_collision = max_synset_collision
         self.number_of_votes = number_of_votes
 
+        LocalWSD.similarity_matrix = {}
         super().__init__()
 
     @timing
     def run(self) -> List[Optional[Synset]]:
         logging.info(f"{len(self.document)} words in the document")
         document_window_solutions = self.compute_windows()
-        document_window_solutions = self.merge_window_solutions(document_window_solutions)
+        document_window_solutions = self.merge_window_solutions(
+            document_window_solutions)
 
         sense_votes = self.vote_senses(document_window_solutions)
         senses = self.select_senses(document_window_solutions, sense_votes)
@@ -41,19 +43,35 @@ class ShotgunWSD(object):
         return convertedSynsets
 
     @timing
+    def cache_synsets(self):
+        self.document_synsets = []
+        for word_index, word in enumerate(self.document.words):
+            synsets = SynsetUtils.get_wordnet_synsets(self.document.words[word_index],
+                                                      pos=self.document.words_pos[word_index],
+                                                      lemma=self.document.words_lemma[word_index])
+
+            if len(synsets) == 0:
+                self.document_synsets.append((word, [None]))
+            else:
+                self.document_synsets.append((word, synsets))
+
+    @timing
     def compute_windows(self) -> Dict[int, List[WindowConfiguration]]:
         logging.debug("Compute windows")
+        self.cache_synsets()
+
         document_window_solutions = {}
 
         for word_index in range(0, len(self.document.words) - self.window_size):
-            window_words = self.document.words[word_index:word_index + self.window_size]
+            window_words = self.document.words[word_index:word_index +
+                                               self.window_size]
             window_words_pos = self.document.words_pos[word_index:word_index + self.window_size]
             window_words_lemma = self.document.words_lemma[word_index:word_index + self.window_size]
+            window_words_synsets = self.document_synsets[word_index:word_index + self.window_size]
 
-            # TODO some max synset combination black magic
             local_wsd = LocalWSD(word_offset=word_index, window_words=window_words, window_words_pos=window_words_pos,
-                                 window_words_lemma=window_words_lemma, number_configs=self.number_configs,
-                                 synset_relatedness=self.synset_relatedness)
+                                 window_words_lemma=window_words_lemma, window_words_synsets=window_words_synsets,
+                                 number_configs=self.number_configs, synset_relatedness=self.synset_relatedness)
             local_wsd.run()
 
             document_window_solutions[word_index] = local_wsd.windows_solutions
@@ -62,16 +80,17 @@ class ShotgunWSD(object):
 
     @timing
     def merge_window_solutions(self, document_window_solutions) -> Dict[int, List[WindowConfiguration]]:
-        logging.debug(f"Start merging {len(document_window_solutions)} window solutions")
+        logging.debug(
+            f"Start merging {len(document_window_solutions)} window solutions")
         merged_windows = None
 
         for synset_collisions in reversed(range(self.min_synset_collision, self.max_synset_collision + 1)):
-            merged_windows = self.merge_windows(document_window_solutions, synset_collisions)
+            merged_windows = self.merge_windows(
+                document_window_solutions, synset_collisions)
 
         logging.debug(f"Obtained {len(merged_windows)}")
         return merged_windows
 
-    @timing
     def merge_windows(self, document_window_solutions: Dict[int, List[WindowConfiguration]],
                       synset_collisions: int) -> Dict[int, List[WindowConfiguration]]:
         for l in range(len(self.document.words)):
@@ -88,7 +107,8 @@ class ShotgunWSD(object):
                     for window2 in config_list2:
                         # collided = False
                         if WindowConfiguration.has_collisions(window1, window2, j + 1, synset_collisions):
-                            merged_window = WindowConfiguration.merge(window1, window2, j + 1)
+                            merged_window = WindowConfiguration.merge(
+                                window1, window2, j + 1)
                             if merged_window != None:
                                 # collided = True
                                 config_list1.append(merged_window)
@@ -98,8 +118,9 @@ class ShotgunWSD(object):
 
     @timing
     def vote_senses(self, document_window_solutions: Dict[int, List[WindowConfiguration]]) -> List[
-        Optional[Tuple[int, int]]]:
-        all_windows: List[WindowConfiguration] = reduce(lambda x, y: x + y, document_window_solutions.values())
+            Optional[Tuple[int, int]]]:
+        all_windows: List[WindowConfiguration] = reduce(
+            lambda x, y: x + y, document_window_solutions.values())
         all_windows = sorted(all_windows, key=len, reverse=True)
         word_sense_weights = self.compute_word_sense_weights(all_windows)
 
@@ -107,7 +128,8 @@ class ShotgunWSD(object):
         results: List[Optional[Tuple[int, int]]] = [None] * len(self.document)
         for word_index in range(len(self.document)):
             if word_index in word_sense_weights:
-                tmp: Dict[Tuple[int, int], float] = word_sense_weights[word_index]
+                tmp: Dict[Tuple[int, int],
+                          float] = word_sense_weights[word_index]
 
                 for synset_index, synset_weight in tmp.items():
                     if synset_weight > max_weights[word_index]:
@@ -118,8 +140,9 @@ class ShotgunWSD(object):
 
         return results
 
+    @timing
     def compute_word_sense_weights(self, wsd_windows: List[WindowConfiguration]) -> Dict[
-        int, Dict[Tuple[int, int], float]]:
+            int, Dict[Tuple[int, int], float]]:
         """
 
         :param wsd_windows: Configuration windows sorted by length
@@ -130,10 +153,12 @@ class ShotgunWSD(object):
             no_of_windows: int = 0
 
             # Get all windows that contain the current word_index
-            temp_indexed_list = list(filter(lambda window: window.contains_global_sense(word_index), wsd_windows))
+            temp_indexed_list = list(
+                filter(lambda window: window.contains_global_sense(word_index), wsd_windows))
             temp_indexed_list = self.extract_wsd_windows(temp_indexed_list)
 
-            temp_indexed_list = sorted(temp_indexed_list, key=cmp_to_key(compare_by_length_and_value))
+            temp_indexed_list = sorted(
+                temp_indexed_list, key=cmp_to_key(compare_by_length_and_value))
 
             for wsd in temp_indexed_list:
                 if no_of_windows == self.number_of_votes:
@@ -145,7 +170,8 @@ class ShotgunWSD(object):
                 weight = log(len(wsd))
                 no_of_windows += 1
 
-                global_synset: Tuple[int, int] = wsd.global_synsets[word_index - wsd.first_global_sense]
+                global_synset: Tuple[int,
+                                     int] = wsd.global_synsets[word_index - wsd.first_global_sense]
                 global_synset_word_id: int = global_synset[0]
                 if global_synset_word_id in word_sense_weights:
                     tmp = word_sense_weights[global_synset_word_id]
@@ -201,18 +227,23 @@ class ShotgunWSD(object):
                         if final_synsets[word_index + window_index] is None or \
                                 len(wsd) >= synset_window_size[word_index + window_index] and \
                                 wsd.get_score() > synset_window_score[word_index + window_index]:
-                            final_synsets[word_index + window_index] = (word_index + window_index, global_synset)
-                            synset_window_score[word_index + window_index] = len(wsd)
-                            synset_window_score[word_index + window_index] = wsd.get_score()
+                            final_synsets[word_index + window_index] = (
+                                word_index + window_index, global_synset)
+                            synset_window_score[word_index +
+                                                window_index] = len(wsd)
+                            synset_window_score[word_index +
+                                                window_index] = wsd.get_score()
 
                     else:
-                        final_synsets[word_index + window_index] = sense_votes[word_index + window_index]
+                        final_synsets[word_index +
+                                      window_index] = sense_votes[word_index + window_index]
 
         return final_synsets
 
     @timing
     def detect_most_used_senses(self, senses: List[Optional[Tuple[int, int]]]) -> List[Tuple[int, int]]:
-        word_sense_count: DefaultDict[str, DefaultDict[int, int]] = defaultdict(lambda: defaultdict(int))
+        word_sense_count: DefaultDict[str, DefaultDict[int, int]] = defaultdict(
+            lambda: defaultdict(int))
 
         for i in range(len(self.document)):
             if senses[i] is not None:
